@@ -1,0 +1,459 @@
+﻿@page "/productos"
+@rendermode InteractiveServer
+
+<PageTitle>Registro de productos</PageTitle>
+
+<div id="contenedor">
+    <h2>Registro de productos</h2>
+
+    <ul id="formulario">
+        <li>
+            <label>No. de inventario</label>
+            <input type="number" min="1"
+                   @bind="numeroInventario"
+                   placeholder="Escribe el número de inventario" />
+        </li>
+
+        <li>
+            <label>Descripción</label>
+            <input type="text"
+                   @bind="descripcion"
+                   placeholder="Escribe la descripción del producto" />
+        </li>
+
+        <li>
+            <label>Departamento</label>
+
+            <ul id="departamentos">
+                <li>
+                    <label>
+                        <input type="radio" name="departamento"
+                               checked="@(departamento == "Frutas")"
+                               @onchange="@(() => departamento = "Frutas")" />
+                        Frutas
+                    </label>
+                </li>
+
+                <li>
+                    <label>
+                        <input type="radio" name="departamento"
+                               checked="@(departamento == "Verduras")"
+                               @onchange="@(() => departamento = "Verduras")" />
+                        Verduras
+                    </label>
+                </li>
+
+                <li>
+                    <label>
+                        <input type="radio" name="departamento"
+                               checked="@(departamento == "Lácteos")"
+                               @onchange="@(() => departamento = "Lácteos")" />
+                        Lácteos
+                    </label>
+                </li>
+            </ul>
+        </li>
+
+        <li>
+            <ul id="botones">
+                <li>
+                    <button type="button" @onclick="GuardarDatos">
+                        Guardar datos
+                    </button>
+                </li>
+                <li>
+                    <button type="button" @onclick="MostrarListaCompleta">
+                        Lista completa
+                    </button>
+                </li>
+                <li>
+                    <button type="button" @onclick="MostrarFrutas">
+                        Lista de frutas
+                    </button>
+                </li>
+                <li>
+                    <button type="button" @onclick="MostrarVerduras">
+                        Lista de verduras
+                    </button>
+                </li>
+                <li>
+                    <button type="button" @onclick="MostrarLacteos">
+                        Lista de lácteos
+                    </button>
+                </li>
+                <li>
+                    <button type="button" id="cerrar" @onclick="CerrarLista">
+                        Cerrar lista
+                    </button>
+                </li>
+            </ul>
+        </li>
+    </ul>
+
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <p id="mensaje">@mensaje</p>
+    }
+
+    @if (mostrarLista)
+    {
+        <div id="listaProductos">
+            <h3>@tituloLista</h3>
+
+            @if (cantidadMostrada > 0)
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No. de inventario</th>
+                            <th>Descripción</th>
+                            <th>Departamento</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @for (int i = 0; i < cantidad; i++)
+                        {
+                            @if (filtro == "" || departamentos[i] == filtro)
+                            {
+                                <tr>
+                                    <td>@numeros[i]</td>
+                                    <td>@descripciones[i]</td>
+                                    <td>@departamentos[i]</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p id="sinProductos">
+                    No hay productos registrados en esta lista.
+                </p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    // Variables del formulario
+    private string numeroInventario = "";
+    private string descripcion = "";
+    private string departamento = "Frutas";
+
+    // Arreglos para almacenar los productos
+    private int[] numeros = new int[100];
+    private string[] descripciones = new string[100];
+    private string[] departamentos = new string[100];
+
+    // Cantidad de productos registrados
+    private int cantidad = 0;
+    private int cantidadMostrada = 0;
+
+    // Variables de control
+    private bool mostrarLista = false;
+    private string tituloLista = "";
+    private string mensaje = "";
+    private string filtro = "";
+
+    // Guardar datos
+    private void GuardarDatos()
+    {
+        mensaje = "";
+
+        if (string.IsNullOrWhiteSpace(numeroInventario) ||
+            string.IsNullOrWhiteSpace(descripcion))
+        {
+            mensaje = "Debes ingresar el número y la descripción.";
+        }
+        else if (!int.TryParse(numeroInventario, out int numero) || numero <= 0)
+        {
+            mensaje = "El número de inventario debe ser positivo.";
+        }
+        else if (cantidad >= 100)
+        {
+            mensaje = "No se pueden registrar más de 100 productos.";
+        }
+        else
+        {
+            bool existe = false;
+
+            for (int i = 0; i < cantidad; i++)
+            {
+                if (numeros[i] == numero)
+                {
+                    existe = true;
+                }
+            }
+
+            if (existe)
+            {
+                mensaje = "Error: ese número de inventario ya existe.";
+            }
+            else
+            {
+                numeros[cantidad] = numero;
+                descripciones[cantidad] = descripcion.Trim();
+                departamentos[cantidad] = departamento;
+
+                cantidad++;
+
+                numeroInventario = "";
+                descripcion = "";
+                departamento = "Frutas";
+
+                mensaje = "Producto guardado correctamente.";
+            }
+        }
+
+        ActualizarCantidadMostrada();
+    }
+
+    // Mostrar todos los productos
+    private void MostrarListaCompleta()
+    {
+        filtro = "";
+        tituloLista = "Lista completa de productos";
+        mostrarLista = true;
+        mensaje = "";
+
+        ActualizarCantidadMostrada();
+    }
+
+    // Mostrar frutas
+    private void MostrarFrutas()
+    {
+        filtro = "Frutas";
+        tituloLista = "Lista de frutas";
+        mostrarLista = true;
+        mensaje = "";
+
+        ActualizarCantidadMostrada();
+    }
+
+    // Mostrar verduras
+    private void MostrarVerduras()
+    {
+        filtro = "Verduras";
+        tituloLista = "Lista de verduras";
+        mostrarLista = true;
+        mensaje = "";
+
+        ActualizarCantidadMostrada();
+    }
+
+    // Mostrar lácteos
+    private void MostrarLacteos()
+    {
+        filtro = "Lácteos";
+        tituloLista = "Lista de lácteos";
+        mostrarLista = true;
+        mensaje = "";
+
+        ActualizarCantidadMostrada();
+    }
+
+    // Contar los productos que cumplen el filtro
+    private void ActualizarCantidadMostrada()
+    {
+        cantidadMostrada = 0;
+
+        for (int i = 0; i < cantidad; i++)
+        {
+            if (filtro == "" || departamentos[i] == filtro)
+            {
+                cantidadMostrada++;
+            }
+        }
+    }
+
+    // Cerrar la lista
+    private void CerrarLista()
+    {
+        mostrarLista = false;
+        tituloLista = "";
+        mensaje = "";
+    }
+}
+
+<style>
+    #contenedor {
+        max-width: 1100px;
+        margin: 30px auto;
+        padding: 30px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        font-family: Arial, sans-serif;
+        color: #333;
+    }
+
+    h2 {
+        font-size: 28px;
+        font-weight: normal;
+        margin-bottom: 25px;
+        color: #252525;
+    }
+
+    #formulario,
+    #departamentos,
+    #botones {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        #formulario > li {
+            margin-bottom: 20px;
+        }
+
+            #formulario > li > label {
+                display: block;
+                margin-bottom: 8px;
+                font-size: 15px;
+            }
+
+        #formulario input[type="number"],
+        #formulario input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 11px;
+            border: 1px solid #d9dfe5;
+            border-radius: 5px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+            #formulario input[type="number"]:focus,
+            #formulario input[type="text"]:focus {
+                border-color: #28a745;
+                box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.12);
+            }
+
+    #departamentos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 22px;
+        margin-top: 12px;
+    }
+
+        #departamentos li label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        #departamentos input[type="radio"] {
+            accent-color: #0d6efd;
+        }
+
+    #botones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 10px;
+    }
+
+        #botones button {
+            border: none;
+            border-radius: 5px;
+            padding: 11px 15px;
+            color: white;
+            font-size: 14px;
+            background-color: #28a745;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+            #botones button:hover {
+                background-color: #218838;
+                transform: translateY(-1px);
+            }
+
+        #botones #cerrar {
+            background-color: #dc3545;
+        }
+
+            #botones #cerrar:hover {
+                background-color: #bb2d3b;
+            }
+
+    #mensaje {
+        margin-top: 18px;
+        padding: 12px;
+        border-radius: 5px;
+        background-color: #eaf6ed;
+        color: #216e35;
+        border: 1px solid #b8dfc1;
+    }
+
+    #listaProductos {
+        margin-top: 35px;
+        overflow-x: auto;
+    }
+
+        #listaProductos h3 {
+            margin-bottom: 15px;
+            font-size: 21px;
+            color: #333;
+        }
+
+        #listaProductos table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        #listaProductos th,
+        #listaProductos td {
+            padding: 13px;
+            text-align: left;
+            border: 1px solid #e0e0e0;
+        }
+
+        #listaProductos th {
+            background-color: #28a745;
+            color: white;
+            font-weight: normal;
+        }
+
+        #listaProductos tbody tr:nth-child(even) {
+            background-color: #f5f7f6;
+        }
+
+        #listaProductos tbody tr:hover {
+            background-color: #eaf6ed;
+        }
+
+    #sinProductos {
+        padding: 15px;
+        background-color: #f5f7f6;
+        border-radius: 5px;
+        color: #666;
+    }
+
+    @@media (max-width: 600px) {
+        #contenedor {
+            margin: 10px;
+            padding: 18px;
+        }
+
+        #botones {
+            flex-direction: column;
+        }
+
+            #botones li,
+            #botones button {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+        #departamentos {
+            gap: 12px;
+        }
+    }
+</style>
